@@ -10,7 +10,7 @@ import Foundation
 struct DisplayPack: Identifiable, Hashable, Equatable {
     let id = UUID()
     let url: URL
-    let rawHTML: String
+    let rawHtml: String
     let cleanedHTML: String
     let rawMarkdown: String
     let cleanedMarkdown: String

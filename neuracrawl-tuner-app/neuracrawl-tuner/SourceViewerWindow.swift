@@ -14,7 +14,7 @@ struct SourceViewerWindow: View {
     @State private var versions: [Version] = []
     @State private var selectedVersion: Version?
     @State private var currentDisplayPackIndex: Int = 0
-    @State private var selectedTab: String = "Cleaned Markdown"
+    @State private var selectedTab: String = "Raw HTML"
     @State private var isLoadingWeb: Bool = false
     @State private var isLoadingData: Bool = false
     @State private var errorMessage: String?
@@ -100,7 +100,7 @@ struct SourceViewerWindow: View {
         
         for dir in numberDirs {
             let urlPath = dir.appendingPathComponent("05_url.txt")
-            let rawHTMLPath = dir.appendingPathComponent("10_raw_html.html")
+            let rawHtmlPath = dir.appendingPathComponent("10_raw_html.html")
             let cleanedHTMLPath = dir.appendingPathComponent("20_cleaned_html.html")
             let rawMarkdownPath = dir.appendingPathComponent("30_raw_markdown.md")
             let cleanedMarkdownPath = dir.appendingPathComponent("40_cleaned_markdown.md")
@@ -108,7 +108,7 @@ struct SourceViewerWindow: View {
             
             guard let urlString = try? String(contentsOf: urlPath, encoding: .utf8),
                   let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)),
-                  let rawHTML = try? String(contentsOf: rawHTMLPath, encoding: .utf8),
+                  let rawHtml = try? String(contentsOf: rawHtmlPath, encoding: .utf8),
                   let cleanedHTML = try? String(contentsOf: cleanedHTMLPath, encoding: .utf8),
                   let rawMarkdown = try? String(contentsOf: rawMarkdownPath, encoding: .utf8),
                   let cleanedMarkdown = try? String(contentsOf: cleanedMarkdownPath, encoding: .utf8),
@@ -120,7 +120,7 @@ struct SourceViewerWindow: View {
             
             packs.append(DisplayPack(
                 url: url,
-                rawHTML: rawHTML,
+                rawHtml: rawHtml,
                 cleanedHTML: cleanedHTML,
                 rawMarkdown: rawMarkdown,
                 cleanedMarkdown: cleanedMarkdown,
@@ -247,7 +247,7 @@ struct SourceViewerWindow: View {
                                     HSplitView {
                                         // Tabs and text editor
                                         TabView(selection: $selectedTab) {
-                                            TextEditor(text: .constant(currentVersion.displayPacks[currentDisplayPackIndex].rawHTML))
+                                            TextEditor(text: .constant(currentVersion.displayPacks[currentDisplayPackIndex].rawHtml))
                                                 .font(.system(.body, design: .monospaced))
                                                 .tabItem { Text("Raw HTML") }
                                                 .tag("Raw HTML")

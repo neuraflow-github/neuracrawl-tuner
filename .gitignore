@@ -6,6 +6,7 @@
 
 .turbo/
 bundle-stats.html
+projects/
 
 # Helm backup and development folders
 helm/**/.backup/
