@@ -747,6 +747,18 @@ wheels = [
 ]
 
 [[package]]
+name = "ftfy"
+version = "6.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "wcwidth" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a5/d3/8650919bc3c7c6e90ee3fa7fd618bf373cbbe55dff043bd67353dbb20cd8/ftfy-6.3.1.tar.gz", hash = "sha256:9b3c3d90f84fb267fe64d375a07b7f8912d817cf86009ae134aa03e1819506ec", size = 308927, upload-time = "2024-10-26T00:50:35.149Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/6e/81d47999aebc1b155f81eca4477a616a70f238a2549848c38983f3c22a82/ftfy-6.3.1-py3-none-any.whl", hash = "sha256:7c70eb532015cd2f9adb53f101fb6c7945988d023a085d127d1573dc49dd0083", size = 44821, upload-time = "2024-10-26T00:50:33.425Z" },
+]
+
+[[package]]
 name = "greenlet"
 version = "3.2.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1380,6 +1392,19 @@ wheels = [
 ]
 
 [[package]]
+name = "markdowncleaner"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ftfy" },
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a1/7e/a11efe493a81fa372ac87454a5fb40f43db633f8662e1811c6bce92de025/markdowncleaner-0.3.0.tar.gz", hash = "sha256:6a20a03cf6f22735e5e148db06ea3998eb95ce0e58742ae1e1923ddace32589e", size = 20834, upload-time = "2025-10-23T04:01:23.57Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/05/0e/495fb803dd177c8fa4f8bb1868fa334fd8ef8d200a02ece08d0f13d37ffe/markdowncleaner-0.3.0-py3-none-any.whl", hash = "sha256:a879da9cb18ba7e385502bd7d9912cd9d246aa686ebdf1a11236b83992618913", size = 17740, upload-time = "2025-10-23T04:01:22.442Z" },
+]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1591,6 +1616,7 @@ dependencies = [
     { name = "ipykernel" },
     { name = "langchain" },
     { name = "langchain-openai" },
+    { name = "markdowncleaner" },
     { name = "pydantic" },
 ]
 
@@ -1602,6 +1628,7 @@ requires-dist = [
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "langchain", specifier = ">=1.0.8" },
     { name = "langchain-openai", specifier = ">=1.0.3" },
+    { name = "markdowncleaner", specifier = ">=0.3.0" },
     { name = "pydantic", specifier = ">=2.12.4" },
 ]
 

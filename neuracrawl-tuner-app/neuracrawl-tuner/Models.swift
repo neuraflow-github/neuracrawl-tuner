@@ -13,7 +13,6 @@ struct DisplayPack: Identifiable, Hashable, Equatable {
     let rawHtml: String
     let cleanedHTML: String
     let rawMarkdown: String
-    let cleanedMarkdown: String
     let feedback: String
     let name: String
     

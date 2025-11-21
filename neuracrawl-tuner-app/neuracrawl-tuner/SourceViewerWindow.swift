@@ -103,15 +103,13 @@ struct SourceViewerWindow: View {
             let rawHtmlPath = dir.appendingPathComponent("10_raw_html.html")
             let cleanedHTMLPath = dir.appendingPathComponent("20_cleaned_html.html")
             let rawMarkdownPath = dir.appendingPathComponent("30_raw_markdown.md")
-            let cleanedMarkdownPath = dir.appendingPathComponent("40_cleaned_markdown.md")
-            let feedbackPath = dir.appendingPathComponent("50_feedback.txt")
+            let feedbackPath = dir.appendingPathComponent("40_feedback.txt")
             
             guard let urlString = try? String(contentsOf: urlPath, encoding: .utf8),
                   let url = URL(string: urlString.trimmingCharacters(in: .whitespacesAndNewlines)),
                   let rawHtml = try? String(contentsOf: rawHtmlPath, encoding: .utf8),
                   let cleanedHTML = try? String(contentsOf: cleanedHTMLPath, encoding: .utf8),
                   let rawMarkdown = try? String(contentsOf: rawMarkdownPath, encoding: .utf8),
-                  let cleanedMarkdown = try? String(contentsOf: cleanedMarkdownPath, encoding: .utf8),
                   let feedback = try? String(contentsOf: feedbackPath, encoding: .utf8)
             else {
                 print("Skipping incomplete data in \(dir.lastPathComponent)")
@@ -123,7 +121,6 @@ struct SourceViewerWindow: View {
                 rawHtml: rawHtml,
                 cleanedHTML: cleanedHTML,
                 rawMarkdown: rawMarkdown,
-                cleanedMarkdown: cleanedMarkdown,
                 feedback: feedback,
                 name: dir.lastPathComponent
             ))
@@ -265,12 +262,6 @@ struct SourceViewerWindow: View {
                                                 .tag("Raw Markdown")
                                                 .padding()
                                             
-                                            TextEditor(text: .constant(currentVersion.displayPacks[currentDisplayPackIndex].cleanedMarkdown))
-                                                .font(.system(.body, design: .monospaced))
-                                                .tabItem { Text("Cleaned Markdown") }
-                                                .tag("Cleaned Markdown")
-                                                .padding()
-                                            
                                             TextEditor(text: .constant(currentVersion.displayPacks[currentDisplayPackIndex].feedback))
                                                 .font(.system(.body, design: .monospaced))
                                                 .tabItem { Text("Feedback") }
@@ -301,7 +292,7 @@ struct SourceViewerWindow: View {
                                         // Direct page selector
                                         Picker("", selection: $currentDisplayPackIndex) {
                                             ForEach(currentVersion.displayPacks.indices, id: \.self) { index in
-                                                Text("\(index + 1)").tag(index)
+                                                Text("\(index)").tag(index)
                                             }
                                         }
                                         .pickerStyle(.menu)
@@ -315,7 +306,7 @@ struct SourceViewerWindow: View {
                                         .disabled(currentDisplayPackIndex == 0)
                                         .keyboardShortcut(.leftArrow, modifiers: [.command])
                                         
-                                        Text("\(currentDisplayPackIndex + 1)/\(currentVersion.displayPacks.count)")
+                                        Text("\(currentDisplayPackIndex)/\(currentVersion.displayPacks.count - 1)")
                                             .fontDesign(.monospaced)
                                             .padding(.horizontal, 8)
                                         
