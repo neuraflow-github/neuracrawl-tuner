@@ -286,7 +286,7 @@ struct SourceViewerWindow: View {
                                                 .frame(minWidth: 200)
                                             
                                             if isLoadingWeb {
-                                                Color.black.opacity(0.1)
+                                                Color.black.opacity(0.3)
                                                 ProgressView()
                                             }
                                         }
