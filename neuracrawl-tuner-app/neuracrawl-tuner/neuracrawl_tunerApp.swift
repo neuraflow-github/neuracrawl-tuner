@@ -17,9 +17,12 @@ struct neuracrawl_tunerApp: App {
         
         WindowGroup(id: "project", for: URL.self) { $folderURL in
             if let url = folderURL {
-                SourceViewerWindow(folderUrl: url).navigationTitle(url.lastPathComponent)
+                SourceViewerWindow(folderUrl: url).navigationTitle(url.absoluteString)
             }
         }
         .defaultSize(width: 960, height: 640)
+        .commands {
+            TextEditingCommands()
+        }
     }
 }

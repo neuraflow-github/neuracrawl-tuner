@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.14.2",
+    "crawl4ai>=0.7.7",
     "httpx>=0.28.1",
     "ipykernel>=7.1.0",
     "langchain>=1.0.8",

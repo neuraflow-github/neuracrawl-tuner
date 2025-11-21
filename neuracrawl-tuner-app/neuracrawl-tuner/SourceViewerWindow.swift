@@ -292,12 +292,20 @@ struct SourceViewerWindow: View {
                                         }
                                     }
                                     
-                                    // Bottom navigation bar
                                     HStack {
                                         Text(currentVersion.displayPacks[currentDisplayPackIndex].name)
                                             .fontDesign(.monospaced)
                                         
                                         Spacer()
+                                        
+                                        // Direct page selector
+                                        Picker("", selection: $currentDisplayPackIndex) {
+                                            ForEach(currentVersion.displayPacks.indices, id: \.self) { index in
+                                                Text("\(index + 1)").tag(index)
+                                            }
+                                        }
+                                        .pickerStyle(.menu)
+                                        .frame(width: 60)
                                         
                                         Button {
                                             currentDisplayPackIndex = currentDisplayPackIndex - 1
@@ -305,7 +313,7 @@ struct SourceViewerWindow: View {
                                             Label("Back", systemImage: "arrow.backward")
                                         }
                                         .disabled(currentDisplayPackIndex == 0)
-                                        .keyboardShortcut(.leftArrow, modifiers: [])
+                                        .keyboardShortcut(.leftArrow, modifiers: [.command])
                                         
                                         Text("\(currentDisplayPackIndex + 1)/\(currentVersion.displayPacks.count)")
                                             .fontDesign(.monospaced)
@@ -320,7 +328,7 @@ struct SourceViewerWindow: View {
                                             }
                                         }
                                         .disabled(currentDisplayPackIndex == currentVersion.displayPacks.count - 1)
-                                        .keyboardShortcut(.rightArrow, modifiers: [])
+                                        .keyboardShortcut(.rightArrow, modifiers: [.command])
                                     }
                                     .padding()
                                     .background(Color(nsColor: .controlBackgroundColor))
