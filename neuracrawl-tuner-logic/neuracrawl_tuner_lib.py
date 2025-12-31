@@ -2,12 +2,17 @@
 neuracrawl-tuner library
 
 This module contains all the core functionality for neuracrawl-tuner:
+- URL discovery (sitemap + crawl)
 - Project management
 - Sitemap URL extraction and analysis
 - URL regex generation for exclusions
 - Interesting URL selection
 - CSS selector extraction for content cleaning
 """
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 import asyncio
 import logging
@@ -16,17 +21,27 @@ import re
 import shutil
 import sys
 from collections import Counter
+from datetime import datetime
 from logging import getLogger
 from pathlib import Path
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
-from crawl4ai import AsyncWebCrawler
+from crawl4ai import (
+    AsyncUrlSeeder,
+    AsyncWebCrawler,
+    BrowserConfig,
+    CacheMode,
+    CrawlerRunConfig,
+    SeedingConfig,
+)
 from crawl4ai.html2text import CustomHTML2Text
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from markdowncleaner import CleanerOptions as MarkdownCleanerOptions
 from markdowncleaner import MarkdownCleaner
 from pydantic import BaseModel, Field
+from url_normalize import url_normalize
 
 # =============================================================================
 # Logging
@@ -57,6 +72,157 @@ def batch_items[T](
 
 
 # =============================================================================
+# URL Discovery
+# =============================================================================
+
+
+async def discover_urls(
+    domain_url: str,
+    max_pages: int = 5000,
+    concurrency: int = 100,
+    allowed_subdomains: list[str] | None = None,
+    url_exclusion_patterns: list[str] | None = None,
+    crawl_sample: int = 0,
+    log_file_path: str = "discovery.log",
+) -> dict:
+    """Fast URL discovery - sitemap+cc seeding, with optional crawl fallback.
+
+    Args:
+        domain_url: The starting domain URL
+        max_pages: Maximum number of URLs to return
+        concurrency: Number of concurrent requests
+        allowed_subdomains: Additional subdomains to allow
+        url_exclusion_patterns: Regex patterns to exclude URLs
+        crawl_sample: Crawl N pages for link discovery. If 0 and no sitemap found, crawls 100 pages.
+        log_file_path: Path to log file for all output
+    """
+    allowed_subdomains = allowed_subdomains or []
+    url_exclusion_patterns = url_exclusion_patterns or []
+    exclusion_regexes = [re.compile(p) for p in url_exclusion_patterns]
+
+    base_domain = urlparse(domain_url).netloc.replace("www.", "")
+    allowed_domains = {base_domain} | {
+        urlparse(u).netloc.replace("www.", "") for u in allowed_subdomains
+    }
+
+    def is_allowed(url: str) -> bool:
+        try:
+            domain = urlparse(url).netloc.replace("www.", "")
+            if domain not in allowed_domains and not any(
+                domain.endswith(f".{d}") for d in allowed_domains
+            ):
+                return False
+            return not any(r.search(url) for r in exclusion_regexes)
+        except Exception:
+            return False
+
+    def log(message: str, log_file):
+        timestamp = datetime.now().isoformat()
+        log_file.write(f"[{timestamp}] {message}\n")
+        log_file.flush()
+        print(message)
+
+    with open(log_file_path, "w", buffering=1) as log_file:
+        log(f"🔍 Seeding URLs for {domain_url} (sitemap+cc)...", log_file)
+
+        async with AsyncUrlSeeder() as url_seeder:
+            seeding_config = SeedingConfig(
+                "sitemap+cc",
+                "*",
+                True,
+                concurrency=concurrency,
+                hits_per_sec=int(concurrency / 10),
+            )
+            urls_data = await url_seeder.urls(domain_url, seeding_config)
+            seed_urls = {url_data["url"] for url_data in urls_data}
+
+        log(f"✓ Seeded {len(seed_urls)} URLs", log_file)
+
+        for url in sorted(seed_urls):
+            log_file.write(f"  SEED: {url}\n")
+        log_file.flush()
+
+        filtered_urls = set()
+        for url in seed_urls:
+            norm = url_normalize(url)
+            if norm and is_allowed(norm):
+                filtered_urls.add(norm)
+
+        log(f"✓ After filtering: {len(filtered_urls)} URLs", log_file)
+
+        pages_to_crawl = crawl_sample
+        if len(filtered_urls) == 0:
+            log("⚠️ No sitemap found, falling back to spider crawl...", log_file)
+            pages_to_crawl = max(crawl_sample, 100)
+            filtered_urls.add(domain_url)
+
+        if pages_to_crawl > 0:
+            log(f"🕷️ Spider crawl of up to {pages_to_crawl} pages...", log_file)
+
+            browser_config = BrowserConfig(viewport_width=1920, viewport_height=1080)
+            crawler_config = CrawlerRunConfig(
+                cache_mode=CacheMode.BYPASS,
+                page_timeout=15000,
+                semaphore_count=concurrency,
+                scan_full_page=False,
+                wait_until="domcontentloaded",
+            )
+
+            to_crawl = list(filtered_urls)[:pages_to_crawl]
+            crawled = set()
+            discovered_links = set()
+
+            async with AsyncWebCrawler(config=browser_config) as crawler:
+                while to_crawl and len(crawled) < pages_to_crawl:
+                    batch = to_crawl[:concurrency]
+                    to_crawl = to_crawl[concurrency:]
+
+                    results = await crawler.arun_many(batch, crawler_config)
+
+                    for result in results:
+                        if result.success:
+                            crawled.add(result.url)
+                            log(f"  ✓ {result.url}", log_file)
+                            if result.links:
+                                for link in result.links.get(
+                                    "internal", []
+                                ) + result.links.get("external", []):
+                                    href = link.get("href")
+                                    if href:
+                                        norm = url_normalize(href)
+                                        if (
+                                            norm
+                                            and is_allowed(norm)
+                                            and norm not in crawled
+                                        ):
+                                            discovered_links.add(norm)
+                        else:
+                            log(f"  ✗ {result.url} ({result.error_message})", log_file)
+
+                    new_urls = list(discovered_links - crawled - set(to_crawl))
+                    to_crawl.extend(new_urls[: pages_to_crawl - len(crawled)])
+
+                    log(
+                        f"  Wave: Crawled {len(crawled)} | Discovered {len(discovered_links)} | Queue {len(to_crawl)}",
+                        log_file,
+                    )
+
+            filtered_urls |= discovered_links
+            log(f"✓ Total discovered: {len(filtered_urls)} URLs", log_file)
+
+        capped = set(list(filtered_urls)[:max_pages])
+        log(f"📊 Final: {len(capped)} URLs", log_file)
+
+        return {
+            "domain": domain_url,
+            "seed_count": len(seed_urls),
+            "filtered_count": len(filtered_urls),
+            "total": len(capped),
+            "urls": capped,
+        }
+
+
+# =============================================================================
 # LLM Utilities
 # =============================================================================
 
@@ -68,10 +234,8 @@ async def call_structured_llm[T: BaseModel](
     system_message = SystemMessage(system_prompt)
     human_message = HumanMessage("Erledige die Aufgabe.")
     messages = [system_message, human_message]
-    llm = ChatOpenAI(
-        base_url="http://127.0.0.1:50025",
-        api_key="litellm-api-key-1234",
-        model="vertex_ai/gemini-2.5-flash",
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
         timeout=120,
         temperature=0.1,
     )
@@ -1497,11 +1661,12 @@ def apply_css_selectors(
 # =============================================================================
 
 __all__ = [
+    # Discovery
+    "discover_urls",
     # Project management
     "PROJECT_MANAGER",
-    "create_sitemap_urls_file",
     # Sitemap
-    "extract_sitemap_urls",
+    "save_sitemap_urls",
     "extract_frequent_sitemap_urls",
     "extract_url_extensions",
     # URL regexes
