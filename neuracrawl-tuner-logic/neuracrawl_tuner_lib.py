@@ -498,6 +498,9 @@ class ProjectManager:
             raise ValueError("No project selected.")
         return self.selected_project
 
+    def get_discovery_log_path(self) -> Path:
+        return self.get_project_folder_path() / "discovery.log"
+
 
 PROJECT_MANAGER = ProjectManager()
 

@@ -4,6 +4,7 @@
 # Special
 # --------------------------------------------------
 
+xcuserdata/
 .turbo/
 bundle-stats.html
 projects/
@@ -50,6 +51,7 @@ Temporary Items
 __pycache__/
 *.py[codz]
 *$py.class
+.claude
 
 # C extensions
 *.so
